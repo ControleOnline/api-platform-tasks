@@ -18,9 +18,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
-
-//properties: 
-
 /**
  * Task
  *
@@ -30,16 +27,20 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
  */
 #[ApiResource(
     operations: [
-        new Get(), new Put(), new Patch(), new Delete(),
+        new Get(
+            security: 'is_granted(\'ROLE_CLIENT\')',
+        ),
         new Put(
             security: 'is_granted(\'ROLE_CLIENT\')',
-            uriTemplate: '/task/{id}',
-            controller: \App\Controller\CreateTaskAction::class
+        ),
+        new Patch(
+            security: 'is_granted(\'ROLE_CLIENT\')',
+        ), 
+        new Delete(
+            security: 'is_granted(\'ROLE_CLIENT\')',
         ),
         new Post(
-            uriTemplate: '/task',
-            controller: \App\Controller\CreateTaskAction::class,
-            securityPostDenormalize: 'is_granted(\'ROLE_CLIENT\')'
+            security: 'is_granted(\'ROLE_CLIENT\')',
         ),
         new GetCollection(
             security: 'is_granted(\'ROLE_CLIENT\')',
