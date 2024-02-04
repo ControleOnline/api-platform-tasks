@@ -9,5 +9,5 @@ config\services.yaml
 
 ```yaml
 imports:
-    - { resource: "../vendor/controleonline/orders/tasks/services/tasks.yaml" }    
+    - { resource: "../modules/controleonline/orders/tasks/services/tasks.yaml" }    
 ```
