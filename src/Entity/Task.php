@@ -75,25 +75,25 @@ class Task
      * @ORM\Column(type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $id;
     /**
      *
      * @ORM\Column(name="name", type="string", length=50, nullable=false)
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $name;
     /**
      *
      * @ORM\Column(name="task_type", type="string", length=50, nullable=false)
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $type;
     /**
      * @var \DateTimeInterface
      * @ORM\Column(name="due_date", type="datetime",  nullable=true, columnDefinition="DATETIME")
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $dueDate;
     /**
@@ -103,7 +103,7 @@ class Task
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="registered_by_id", referencedColumnName="id", nullable=true)
      * })
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $registeredBy;
     /**
@@ -113,7 +113,7 @@ class Task
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="task_for_id", referencedColumnName="id", nullable=false)
      * })
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $taskFor;
     /**
@@ -123,7 +123,7 @@ class Task
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="client_id", referencedColumnName="id", nullable=false)
      * })
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $client;
     /**
@@ -133,7 +133,7 @@ class Task
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="task_status_id", referencedColumnName="id", nullable=true)
      * })
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $taskStatus;
     /**
@@ -143,7 +143,7 @@ class Task
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="category_id", referencedColumnName="id", nullable=false)
      * })
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $category;
     /**
@@ -153,7 +153,7 @@ class Task
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="reason_id", referencedColumnName="id", nullable=false)
      * })
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $reason;
     /**
@@ -163,7 +163,7 @@ class Task
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="criticality_id", referencedColumnName="id", nullable=false)
      * })
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $criticality;
     /**
@@ -173,7 +173,7 @@ class Task
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="provider_id", referencedColumnName="id", nullable=false)
      * })
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $provider;
     /**
@@ -189,13 +189,13 @@ class Task
     /**
      * @var \DateTimeInterface
      * @ORM\Column(name="created_at", type="datetime",  nullable=false, columnDefinition="DATETIME")
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $createdAt;
     /**
      * @var \DateTimeInterface
      * @ORM\Column(name="alter_date", type="datetime",  nullable=false, columnDefinition="DATETIME")
-     * @Groups({"task_write"."task_read","order_read"})
+     * @Groups({"task_write","task_read","order_read"})
      */
     private $alterDate;
     /**
