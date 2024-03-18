@@ -23,7 +23,7 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
  *
  * @ORM\EntityListeners ({App\Listener\LogListener::class})
  * @ORM\Table (name="tasks")
- * @ORM\Entity ()
+ * @ORM\Entity(repositoryClass="ControleOnline\Repository\TaskRepository")
  */
 #[ApiResource(
     operations: [
