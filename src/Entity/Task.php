@@ -21,7 +21,7 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 /**
  * Task
  *
- * @ORM\EntityListeners ({App\Listener\LogListener::class})
+ * @ORM\EntityListeners ({ControleOnline\Listener\LogListener::class})
  * @ORM\Table (name="tasks")
  * @ORM\Entity(repositoryClass="ControleOnline\Repository\TaskRepository")
  */
