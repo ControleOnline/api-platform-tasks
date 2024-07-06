@@ -177,9 +177,9 @@ class Task
      */
     private $provider;
     /**
-     * @var \ControleOnline\Entity\SalesOrder
+     * @var \ControleOnline\Entity\Order
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\SalesOrder", inversedBy="task")
+     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Order", inversedBy="task")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="order_id", referencedColumnName="id", nullable=true)
      * })
