@@ -19,7 +19,7 @@ use stdClass;
  * @ORM\Entity ()
  * @ORM\Table (name="task_interations")
  */
-#[ApiResource(operations: [new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['task_interaction_write']]), new GetCollection(security: 'is_granted(\'ROLE_CLIENT\')'), new Post(uriTemplate: 'task_interations/task/{task_id}', controller: \App\Controller\CreateTaskInteractionAction::class, security: 'is_granted(\'ROLE_CLIENT\')', deserialize: false, openapiContext: ['consumes' => ['multipart/form-data']])], formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']], security: 'is_granted(\'ROLE_CLIENT\')', normalizationContext: ['groups' => ['task_interaction_read']], denormalizationContext: ['groups' => ['task_interaction_write']])]
+#[ApiResource(operations: [new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['task_interaction:write']]), new GetCollection(security: 'is_granted(\'ROLE_CLIENT\')'), new Post(uriTemplate: 'task_interations/task/{task_id}', controller: \App\Controller\CreateTaskInteractionAction::class, security: 'is_granted(\'ROLE_CLIENT\')', deserialize: false, openapiContext: ['consumes' => ['multipart/form-data']])], formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']], security: 'is_granted(\'ROLE_CLIENT\')', normalizationContext: ['groups' => ['task_interaction:read']], denormalizationContext: ['groups' => ['task_interaction:write']])]
 #[ApiFilter(filterClass: SearchFilter::class, properties: ['task' => 'exact', 'task.id' => 'exact', 'task.taskFor' => 'exact', 'registeredBy' => 'exact', 'type' => 'exact', 'visibility' => 'exact', 'read' => 'exact'])]
 class TaskInteration
 {
@@ -28,25 +28,25 @@ class TaskInteration
      * @ORM\Column(type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
-     * @Groups({"task_interaction_read"})
+     * @Groups({"task_interaction:read"})
      */
     private $id;
     /**
      *
      * @ORM\Column(type="string", length=50, nullable=false)
-     * @Groups({"task_interaction_read"})
+     * @Groups({"task_interaction:read"})
      */
     private $type;
     /**
      *
      * @ORM\Column(name="visibility",type="string", length=50, nullable=false)
-     * @Groups({"task_interaction_read"})
+     * @Groups({"task_interaction:read"})
      */
     private $visibility;
     /**
      *
      * @ORM\Column(type="string", nullable=true)
-     * @Groups({"task_interaction_read"})
+     * @Groups({"task_interaction:read"})
      */
     private $body;
     /**
@@ -56,7 +56,7 @@ class TaskInteration
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="registered_by_id", referencedColumnName="id", nullable=false)
      * })
-     * @Groups({"task_interaction_read"})
+     * @Groups({"task_interaction:read"})
      */
     private $registeredBy;
     /**
@@ -67,7 +67,7 @@ class TaskInteration
      *   @ORM\JoinColumn(name="task_id", referencedColumnName="id", nullable=true)
      * })
      * 
-     * @Groups({"task_interaction_read"})
+     * @Groups({"task_interaction:read"})
      */
     private $task;
     /**
@@ -77,18 +77,18 @@ class TaskInteration
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="file_id", referencedColumnName="id", nullable=true)
      * })
-     * @Groups({"task_interaction_read"})
+     * @Groups({"task_interaction:read"})
      */
     private $file;
     /**
      * @var \DateTimeInterface
      * @ORM\Column(name="created_at", type="datetime",  nullable=false, columnDefinition="DATETIME")
-     * @Groups({"task_interaction_read"})
+     * @Groups({"task_interaction:read"})
      */
     private $createdAt;
     /**
      * @ORM\Column(name="`read`", type="integer",  nullable=false,)
-     * @Groups({"task_interaction_read","task_interaction_write"})
+     * @Groups({"task_interaction:read","task_interaction:write"})
      */
     private $read;
     /**
