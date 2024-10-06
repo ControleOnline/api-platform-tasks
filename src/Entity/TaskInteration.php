@@ -5,6 +5,7 @@ namespace ControleOnline\Entity;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
@@ -12,14 +13,28 @@ use ApiPlatform\Metadata\ApiFilter;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use stdClass;
+
 /**
  * TaskInteration
  *
  * @ORM\EntityListeners ({ControleOnline\Listener\LogListener::class})
- * @ORM\Entity ()
+ * @ORM\Entity(repositoryClass="ControleOnline\Repository\TaskInterationRepository")
  * @ORM\Table (name="task_interations")
  */
-#[ApiResource(operations: [new Put(security: 'is_granted(\'ROLE_CLIENT\')', denormalizationContext: ['groups' => ['task_interaction:write']]), new GetCollection(security: 'is_granted(\'ROLE_CLIENT\')'), new Post(uriTemplate: 'task_interations/task/{task_id}', controller: \App\Controller\CreateTaskInteractionAction::class, security: 'is_granted(\'ROLE_CLIENT\')', deserialize: false, openapiContext: ['consumes' => ['multipart/form-data']])], formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']], security: 'is_granted(\'ROLE_CLIENT\')', normalizationContext: ['groups' => ['task_interaction:read']], denormalizationContext: ['groups' => ['task_interaction:write']])]
+#[ApiResource(
+    operations: [
+        new Get(security: 'is_granted(\'ROLE_CLIENT\')'),
+        new Post(
+            security: 'is_granted(\'ROLE_ADMIN\') or (is_granted(\'ROLE_CLIENT\'))',
+        ),
+        new GetCollection(security: 'is_granted(\'ROLE_CLIENT\')'),
+
+    ],
+    formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => ['text/csv']],
+    security: 'is_granted(\'ROLE_CLIENT\')',
+    normalizationContext: ['groups' => ['task_interaction:read']],
+    denormalizationContext: ['groups' => ['task_interaction:write']]
+)]
 #[ApiFilter(filterClass: SearchFilter::class, properties: ['task' => 'exact', 'task.id' => 'exact', 'task.taskFor' => 'exact', 'registeredBy' => 'exact', 'type' => 'exact', 'visibility' => 'exact', 'read' => 'exact'])]
 class TaskInteration
 {
@@ -117,7 +132,7 @@ class TaskInteration
     /**
      * Set the value of type
      */
-    public function setType($type) : self
+    public function setType($type): self
     {
         $this->type = $type;
         return $this;
@@ -152,7 +167,7 @@ class TaskInteration
     /**
      * Set the value of registeredBy
      */
-    public function setRegisteredBy($registeredBy) : self
+    public function setRegisteredBy($registeredBy): self
     {
         $this->registeredBy = $registeredBy;
         return $this;
@@ -167,7 +182,7 @@ class TaskInteration
     /**
      * Set the value of task
      */
-    public function setTask($task) : self
+    public function setTask($task): self
     {
         $this->task = $task;
         return $this;
@@ -182,7 +197,7 @@ class TaskInteration
     /**
      * Set the value of file
      */
-    public function setFile($file) : self
+    public function setFile($file): self
     {
         $this->file = $file;
         return $this;
@@ -204,7 +219,7 @@ class TaskInteration
     /**
      * Set the value of visibility
      */
-    public function setVisibility($visibility) : self
+    public function setVisibility($visibility): self
     {
         $this->visibility = $visibility;
         return $this;
