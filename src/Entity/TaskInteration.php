@@ -113,6 +113,7 @@ class TaskInteration
     {
         $this->createdAt = new \DateTime('now');
         $this->visibility = 'private';
+        $this->read = false;
     }
     /**
      * Get the value of id
