@@ -49,19 +49,19 @@ class TaskInteration
     /**
      *
      * @ORM\Column(type="string", length=50, nullable=false)
-     * @Groups({"task_interaction:read"})
+     * @Groups({"task_interaction:read", "task_interaction:write"})
      */
     private $type;
     /**
      *
      * @ORM\Column(name="visibility",type="string", length=50, nullable=false)
-     * @Groups({"task_interaction:read"})
+     * @Groups({"task_interaction:read", "task_interaction:write"})
      */
     private $visibility;
     /**
      *
      * @ORM\Column(type="string", nullable=true)
-     * @Groups({"task_interaction:read"})
+     * @Groups({"task_interaction:read", "task_interaction:write"})
      */
     private $body;
     /**
@@ -71,7 +71,7 @@ class TaskInteration
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="registered_by_id", referencedColumnName="id", nullable=false)
      * })
-     * @Groups({"task_interaction:read"})
+     * @Groups({"task_interaction:read", "task_interaction:write"})
      */
     private $registeredBy;
     /**
@@ -82,7 +82,7 @@ class TaskInteration
      *   @ORM\JoinColumn(name="task_id", referencedColumnName="id", nullable=true)
      * })
      * 
-     * @Groups({"task_interaction:read"})
+     * @Groups({"task_interaction:read", "task_interaction:write"})
      */
     private $task;
     /**
@@ -92,18 +92,18 @@ class TaskInteration
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="file_id", referencedColumnName="id", nullable=true)
      * })
-     * @Groups({"task_interaction:read"})
+     * @Groups({"task_interaction:read", "task_interaction:write"})
      */
     private $file;
     /**
      * @var \DateTimeInterface
      * @ORM\Column(name="created_at", type="datetime",  nullable=false, columnDefinition="DATETIME")
-     * @Groups({"task_interaction:read"})
+     * @Groups({"task_interaction:read", "task_interaction:write"})
      */
     private $createdAt;
     /**
      * @ORM\Column(name="`read`", type="integer",  nullable=false,)
-     * @Groups({"task_interaction:read","task_interaction:write"})
+     * @Groups({"task_interaction:read", "task_interaction:write","task_interaction:write"})
      */
     private $read;
     /**
@@ -112,7 +112,6 @@ class TaskInteration
     public function __construct()
     {
         $this->createdAt = new \DateTime('now');
-        $this->body = json_encode(new stdClass());
         $this->visibility = 'private';
     }
     /**
