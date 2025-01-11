@@ -64,7 +64,7 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
     'category' => 'exact',
     'client' => 'exact',
     'order' => 'exact',
-    'task_type' => 'exact',
+    'type' => 'exact',
 ])]
 
 
