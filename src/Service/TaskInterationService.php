@@ -15,7 +15,7 @@ class TaskInterationService
     private Security $security
   ) {}
 
-  public function beforePersist(TaskInteration $taskInteration)
+  public function prePersist(TaskInteration $taskInteration)
   {
     $taskInteration->setRegisteredBy($this->security->getUser()->getPeople());
     return  $taskInteration;
