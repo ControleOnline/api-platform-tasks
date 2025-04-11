@@ -5,7 +5,8 @@ namespace ControleOnline\Service;
 use ControleOnline\Entity\TaskInteration;
 use Doctrine\ORM\EntityManagerInterface;
 
-use Symfony\Component\Security\Core\Security;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
+ AS Security;
 
 class TaskInterationService
 {
@@ -17,7 +18,7 @@ class TaskInterationService
 
   public function prePersist(TaskInteration $taskInteration)
   {
-    $taskInteration->setRegisteredBy($this->security->getUser()->getPeople());
+    $taskInteration->setRegisteredBy($this->security->getToken()->getUser()->getPeople());
     return  $taskInteration;
   }
 }
