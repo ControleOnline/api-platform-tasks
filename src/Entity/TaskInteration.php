@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\GetCollection;
@@ -16,10 +17,6 @@ use stdClass;
 
 /**
  * TaskInteration
- *
- * @ORM\EntityListeners ({ControleOnline\Listener\LogListener::class})
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\TaskInterationRepository")
- * @ORM\Table (name="task_interations")
  */
 #[ApiResource(
     operations: [
@@ -36,75 +33,72 @@ use stdClass;
     denormalizationContext: ['groups' => ['task_interaction:write']]
 )]
 #[ApiFilter(filterClass: SearchFilter::class, properties: ['task' => 'exact', 'task.id' => 'exact', 'task.taskFor' => 'exact', 'registeredBy' => 'exact', 'type' => 'exact', 'visibility' => 'exact', 'read' => 'exact'])]
+#[ORM\Table(name: 'task_interations')]
+#[ORM\EntityListeners([LogListener::class])]
+#[ORM\Entity(repositoryClass: \ControleOnline\Repository\TaskInterationRepository::class)]
 class TaskInteration
 {
     /**
      *
-     * @ORM\Column(type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"task_interaction:read"})
      */
+    #[ORM\Column(type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     private $id;
     /**
      *
-     * @ORM\Column(type="string", length=50, nullable=false)
      * @Groups({"task_interaction:read", "task_interaction:write"})
      */
+    #[ORM\Column(type: 'string', length: 50, nullable: false)]
     private $type;
     /**
      *
-     * @ORM\Column(name="visibility",type="string", length=50, nullable=false)
      * @Groups({"task_interaction:read", "task_interaction:write"})
      */
+    #[ORM\Column(name: 'visibility', type: 'string', length: 50, nullable: false)]
     private $visibility;
     /**
      *
-     * @ORM\Column(type="string", nullable=true)
      * @Groups({"task_interaction:read", "task_interaction:write"})
      */
+    #[ORM\Column(type: 'string', nullable: true)]
     private $body;
     /**
      * @var \ControleOnline\Entity\People
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\People")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="registered_by_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"task_interaction:read", "task_interaction:write"})
      */
+    #[ORM\JoinColumn(name: 'registered_by_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\People::class)]
     private $registeredBy;
     /**
      * @var \ControleOnline\Entity\Task
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Task")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="task_id", referencedColumnName="id", nullable=true)
-     * })
-     * 
+     *
      * @Groups({"task_interaction:read", "task_interaction:write"})
      */
+    #[ORM\JoinColumn(name: 'task_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\Task::class)]
     private $task;
     /**
      * @var \ControleOnline\Entity\File
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\File")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="file_id", referencedColumnName="id", nullable=true)
-     * })
      * @Groups({"task_interaction:read", "task_interaction:write"})
      */
+    #[ORM\JoinColumn(name: 'file_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\File::class)]
     private $file;
     /**
      * @var \DateTimeInterface
-     * @ORM\Column(name="created_at", type="datetime",  nullable=false, columnDefinition="DATETIME")
      * @Groups({"task_interaction:read", "task_interaction:write"})
      */
+    #[ORM\Column(name: 'created_at', type: 'datetime', nullable: false, columnDefinition: 'DATETIME')]
     private $createdAt;
     /**
-     * @ORM\Column(name="`read`", type="integer",  nullable=false,)
      * @Groups({"task_interaction:read", "task_interaction:write","task_interaction:write"})
      */
+    #[ORM\Column(name: '`read`', type: 'integer', nullable: false)]
     private $read;
     /**
      * Constructor

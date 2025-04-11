@@ -1,6 +1,7 @@
 <?php
 
-namespace ControleOnline\Entity;
+namespace ControleOnline\Entity; 
+use ControleOnline\Listener\LogListener;
 
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
@@ -20,10 +21,6 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
 /**
  * Task
- *
- * @ORM\EntityListeners ({ControleOnline\Listener\LogListener::class})
- * @ORM\Table (name="tasks")
- * @ORM\Entity(repositoryClass="ControleOnline\Repository\TaskRepository")
  */
 #[ApiResource(
     operations: [
@@ -66,137 +63,122 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
     'order' => 'exact',
     'type' => 'exact',
 ])]
+#[ORM\Table(name: 'tasks')]
+#[ORM\EntityListeners([LogListener::class])]
+#[ORM\Entity(repositoryClass: \ControleOnline\Repository\TaskRepository::class)]
 
 
 class Task
 {
     /**
      *
-     * @ORM\Column(type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\Column(type: 'integer', nullable: false)]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     private $id;
     /**
      *
-     * @ORM\Column(name="name", type="string", length=50, nullable=false)
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\Column(name: 'name', type: 'string', length: 50, nullable: false)]
     private $name;
     /**
      *
-     * @ORM\Column(name="task_type", type="string", length=50, nullable=false)
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\Column(name: 'task_type', type: 'string', length: 50, nullable: false)]
     private $type;
     /**
      * @var \DateTimeInterface
-     * @ORM\Column(name="due_date", type="datetime",  nullable=true, columnDefinition="DATETIME")
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\Column(name: 'due_date', type: 'datetime', nullable: true, columnDefinition: 'DATETIME')]
     private $dueDate;
     /**
      * @var \ControleOnline\Entity\People
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\People")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="registered_by_id", referencedColumnName="id", nullable=true)
-     * })
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\JoinColumn(name: 'registered_by_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\People::class)]
     private $registeredBy;
     /**
      * @var \ControleOnline\Entity\People
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\People")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="task_for_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\JoinColumn(name: 'task_for_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\People::class)]
     private $taskFor;
     /**
      * @var \ControleOnline\Entity\People
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\People")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="client_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\People::class)]
     private $client;
     /**
      * @var \ControleOnline\Entity\Status
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Status")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="task_status_id", referencedColumnName="id", nullable=true)
-     * })
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\JoinColumn(name: 'task_status_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\Status::class)]
     private $taskStatus;
     /**
      * @var \ControleOnline\Entity\Category
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Category")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="category_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\JoinColumn(name: 'category_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\Category::class)]
     private $category;
     /**
      * @var \ControleOnline\Entity\Category
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Category")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="reason_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\JoinColumn(name: 'reason_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\Category::class)]
     private $reason;
     /**
      * @var \ControleOnline\Entity\Category
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Category")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="criticality_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\JoinColumn(name: 'criticality_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\Category::class)]
     private $criticality;
     /**
      * @var \ControleOnline\Entity\People
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\People")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="provider_id", referencedColumnName="id", nullable=false)
-     * })
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\JoinColumn(name: 'provider_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\People::class)]
     private $provider;
     /**
      * @var \ControleOnline\Entity\Order
      *
-     * @ORM\ManyToOne(targetEntity="ControleOnline\Entity\Order", inversedBy="task")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="order_id", referencedColumnName="id", nullable=true)
-     * })
      * @Groups({"task:read"})
      */
+    #[ORM\JoinColumn(name: 'order_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: \ControleOnline\Entity\Order::class, inversedBy: 'task')]
     private $order;
     /**
      * @var \DateTimeInterface
-     * @ORM\Column(name="created_at", type="datetime",  nullable=false, columnDefinition="DATETIME")
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\Column(name: 'created_at', type: 'datetime', nullable: false, columnDefinition: 'DATETIME')]
     private $createdAt;
     /**
      * @var \DateTimeInterface
-     * @ORM\Column(name="alter_date", type="datetime",  nullable=false, columnDefinition="DATETIME")
      * @Groups({"task:write","task:read","order:read"})
      */
+    #[ORM\Column(name: 'alter_date', type: 'datetime', nullable: false, columnDefinition: 'DATETIME')]
     private $alterDate;
     /**
      * Constructor
