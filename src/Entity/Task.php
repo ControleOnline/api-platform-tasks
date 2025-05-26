@@ -71,7 +71,7 @@ class Task
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $name;
 
-    #[ORM\Column(name: 'task_type', type: 'string', length: 50, nullable: false)]
+    #[ORM\Column(name: 'task_type', type: 'string', length: 50, nullable: true)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $type;
 
@@ -80,37 +80,37 @@ class Task
     private $dueDate;
 
     #[ORM\ManyToOne(targetEntity: People::class)]
-    #[ORM\JoinColumn(name: 'registered_by_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\JoinColumn(name: 'registered_by_id', referencedColumnName: 'id', nullable: false)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $registeredBy;
 
     #[ORM\ManyToOne(targetEntity: People::class)]
-    #[ORM\JoinColumn(name: 'task_for_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\JoinColumn(name: 'task_for_id', referencedColumnName: 'id', nullable: true)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $taskFor;
 
     #[ORM\ManyToOne(targetEntity: People::class)]
-    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\JoinColumn(name: 'client_id', referencedColumnName: 'id', nullable: true)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $client;
 
     #[ORM\ManyToOne(targetEntity: Status::class)]
-    #[ORM\JoinColumn(name: 'task_status_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\JoinColumn(name: 'task_status_id', referencedColumnName: 'id', nullable: false)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $taskStatus;
 
     #[ORM\ManyToOne(targetEntity: Category::class)]
-    #[ORM\JoinColumn(name: 'category_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\JoinColumn(name: 'category_id', referencedColumnName: 'id', nullable: true)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $category;
 
     #[ORM\ManyToOne(targetEntity: Category::class)]
-    #[ORM\JoinColumn(name: 'reason_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\JoinColumn(name: 'reason_id', referencedColumnName: 'id', nullable: true)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $reason;
 
     #[ORM\ManyToOne(targetEntity: Category::class)]
-    #[ORM\JoinColumn(name: 'criticality_id', referencedColumnName: 'id', nullable: false)]
+    #[ORM\JoinColumn(name: 'criticality_id', referencedColumnName: 'id', nullable: true)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $criticality;
 
@@ -128,7 +128,7 @@ class Task
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $createdAt;
 
-    #[ORM\Column(name: 'alter_date', type: 'datetime', nullable: false, columnDefinition: 'DATETIME')]
+    #[ORM\Column(name: 'alter_date', type: 'datetime', nullable: true, columnDefinition: 'DATETIME')]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $alterDate;
 
