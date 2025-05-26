@@ -35,6 +35,6 @@ class TaskService
     $queryBuilder->setParameter('companies', $companies);
     */
 
-    echo $queryBuilder->getQuery()->getSQL();
+    //echo $queryBuilder->getQuery()->getSQL();
   }
 }
