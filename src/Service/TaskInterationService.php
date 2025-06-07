@@ -121,7 +121,7 @@ class TaskInterationService
     return  $taskInteration;
   }
 
-  public function posPersist(TaskInteration $taskInteration): TaskInteration
+  public function postPersist(TaskInteration $taskInteration): TaskInteration
   {
     return $this->notifyClient($taskInteration);
   }
