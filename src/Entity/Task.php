@@ -135,7 +135,7 @@ class Task
 
     #[ORM\Column(name: 'announce', type: 'string', nullable: true)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
-    private string $announce;
+    private ?string $announce = null;
 
     public function __construct()
     {
@@ -300,7 +300,7 @@ class Task
     public function addAnnounce(mixed $value): self
     {
         $announce = $this->getAnnounce(true);
-        
+
         if (!in_array($value, $announce))
             array_push($announce, $value);
 
