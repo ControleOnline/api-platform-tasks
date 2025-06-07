@@ -25,6 +25,7 @@ use ControleOnline\Repository\TaskRepository;
 use ControleOnline\Listener\LogListener;
 use DateTime;
 use DateTimeInterface;
+use stdClass;
 
 #[ORM\Table(name: 'tasks')]
 #[ORM\EntityListeners([LogListener::class])]
@@ -132,10 +133,15 @@ class Task
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $alterDate;
 
+    #[ORM\Column(name: 'announce', type: 'string', nullable: true)]
+    #[Groups(['task:write', 'task:read', 'order:read'])]
+    private string $announce;
+
     public function __construct()
     {
         $this->createdAt = new DateTime('now');
         $this->alterDate = new DateTime('now');
+        $this->announce = json_encode(new stdClass());
     }
 
     public function getId()
@@ -283,5 +289,30 @@ class Task
     public function getAlterDate()
     {
         return $this->alterDate;
+    }
+    public function getAnnounce(bool $decode = false): string|array
+    {
+        // Ensure we're decoding a string, even if it was temporarily an array internally
+        $announceString = is_array($this->announce) ? json_encode($this->announce) : $this->announce;
+        return $decode ? json_decode((string) $announceString, true) : (string) $announceString;
+    }
+
+    public function addAnnounce(mixed $value): self
+    {
+        $announce = $this->getAnnounce(true);
+        
+        if (!in_array($value, $announce))
+            array_push($announce, $value);
+
+        return $this->setAnnounce($announce);
+    }
+
+    public function setAnnounce(string|array|object $announce): self
+    {
+        if (is_string($announce))
+            $announce = json_decode($announce, true);
+
+        $this->announce = json_encode($announce);
+        return $this;
     }
 }

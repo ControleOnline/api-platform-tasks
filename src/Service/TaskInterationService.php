@@ -17,7 +17,8 @@ class TaskInterationService
     private Security $security,
     private StatusService $statusService,
     private PeopleService $peopleService,
-    private FileService $fileService
+    private FileService $fileService,
+    private IntegrationService $integrationService
   ) {}
 
   public function addClientInteration(MessageInterface $message, People $provider, string $type): TaskInteration
@@ -31,7 +32,8 @@ class TaskInterationService
       'phone' => substr($number, 4)
     ];
     $registredBy = $this->peopleService->discoveryPeople(null,  null,  $phone,  $name, null);
-    $task = $this->discoveryOpenTask($provider, $registredBy, $type);
+    $task = $this->discoveryOpenTask($provider, $registredBy, $type, $number);
+
     return $this->addInteration($registredBy, $message, $task, $type, 'public');
   }
 
@@ -62,7 +64,7 @@ class TaskInterationService
     return $taskInteration;
   }
 
-  public function discoveryOpenTask(People $provider, People $registredBy, string $type): Task
+  public function discoveryOpenTask(People $provider, People $registredBy, string $type, ?string $announce = null): Task
   {
 
     $openStatus = $this->statusService->discoveryStatus('open', 'open', $type);
@@ -82,6 +84,7 @@ class TaskInterationService
       $task->settype($type);
     }
 
+    if ($announce) $task->addAnnounce($announce);
     $task->setTaskStatus($openStatus);
     $this->manager->persist($task);
     $this->manager->flush();
@@ -89,10 +92,37 @@ class TaskInterationService
     return $task;
   }
 
+  public function notifyClient(TaskInteration $taskInteration): TaskInteration
+  {
+
+    $task = $taskInteration->getTask();
+    $origin = "551131360353";
+
+    foreach ($task->getAnnounce(true) as $destination) {
+      if ($origin != $destination) {
+        $message = json_encode([
+          "action" => "sendMessage",
+          "origin" => $origin,
+          "destination" => $destination,
+          "message" => json_encode($taskInteration->getBody()),
+          //"file" => $taskInteration->getFile()
+        ]);
+        $this->integrationService->addIntegration($message, 'WhatsApp', null, null, $task->getProvider());
+      }
+    }
+
+    return  $taskInteration;
+  }
+
   public function prePersist(TaskInteration $taskInteration): TaskInteration
   {
     if (!$taskInteration->getRegisteredBy())
       $taskInteration->setRegisteredBy($this->security->getToken()->getUser()->getPeople());
     return  $taskInteration;
+  }
+
+  public function posPersist(TaskInteration $taskInteration): TaskInteration
+  {
+    return $this->notifyClient($taskInteration);
   }
 }
