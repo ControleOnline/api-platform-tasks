@@ -81,7 +81,7 @@ class TaskInteration
     #[Groups(['task_interaction:read', 'task_interaction:write'])]
     private $createdAt;
 
-    #[ORM\Column(name: 'read', type: 'integer', nullable: false)]
+    #[ORM\Column(name: 'is_read', type: 'integer', nullable: false)]
     #[Groups(['task_interaction:read', 'task_interaction:write'])]
     private $read;
 
