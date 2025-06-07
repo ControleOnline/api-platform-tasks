@@ -290,11 +290,12 @@ class Task
     {
         return $this->alterDate;
     }
+
     public function getAnnounce(bool $decode = false): string|array
     {
         // Ensure we're decoding a string, even if it was temporarily an array internally
         $announceString = is_array($this->announce) ? json_encode($this->announce) : $this->announce;
-        return $decode ? json_decode((string) $announceString, true) : (string) $announceString;
+        return $decode ? json_decode((string) $announceString, true) || [] : (string) $announceString;
     }
 
     public function addAnnounce(mixed $value): self
