@@ -49,7 +49,7 @@ class TaskInterationService
 
     $taskInteration = new TaskInteration();
     $taskInteration->setTask($task);
-    $taskInteration->settype($type);
+    $taskInteration->setType($type);
     $taskInteration->setVisibility($visibility);
     $taskInteration->setBody($message->getMessageContent()->getBody());
     $taskInteration->setRegisteredBy($registredBy);
