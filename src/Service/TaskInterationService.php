@@ -71,7 +71,7 @@ class TaskInterationService
     $task = $this->manager->getRepository(Task::class)->findOneBy([
       'taskStatus' => [$openStatus, $pendingStatus],
       'provider' => $provider,
-      'registredBy' => $registredBy,
+      'registeredBy' => $registredBy,
       'type' => $type
     ]);
 
