@@ -85,11 +85,16 @@ class TaskInteration
     #[Groups(['task_interaction:read', 'task_interaction:write'])]
     private $read;
 
+    #[ORM\Column(name: 'notified', type: 'integer', nullable: false)]
+    #[Groups(['task_interaction:read', 'task_interaction:write'])]
+    private $notified;
+
     public function __construct()
     {
         $this->createdAt = new DateTime('now');
         $this->visibility = 'private';
-        $this->read = false;
+        $this->read = 0;
+        $this->notified = 0;
     }
 
     public function getId()
@@ -152,10 +157,17 @@ class TaskInteration
         return $this;
     }
 
-    public function getCreatedAt()
+    public function getCreatedAt(): DateTimeInterface
     {
         return $this->createdAt;
     }
+
+    public function setCreatesAt(DateTimeInterface $createdAt): self
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
 
     public function getVisibility()
     {
@@ -176,6 +188,18 @@ class TaskInteration
     public function setRead($read)
     {
         $this->read = $read;
+        return $this;
+    }
+
+    public function getNotified()
+    {
+        return $this->notified;
+    }
+
+    public function setNotified($notified): self
+    {
+        $this->notified = $notified;
+
         return $this;
     }
 }
