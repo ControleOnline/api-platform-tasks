@@ -107,7 +107,7 @@ class TaskInterationService
           "action" => "sendMessage",
           "origin" => $origin,
           "destination" => $destination,
-          "message" => json_encode($taskInteration->getBody()),
+          "message" => $taskInteration->getBody(),
           //"file" => $taskInteration->getFile()
         ]);
         $this->integrationService->addIntegration($message, 'WhatsApp', null, null, $task->getProvider());
