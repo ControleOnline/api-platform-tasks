@@ -12,6 +12,8 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 class TaskInterationService
 {
 
+  private bool $notify = true;
+
   public function __construct(
     private EntityManagerInterface $manager,
     private Security $security,
@@ -24,6 +26,7 @@ class TaskInterationService
   public function addClientInteration(MessageInterface $message, People $provider, string $type): TaskInteration
   {
 
+    $this->notify = false;
     $number = preg_replace('/\D/', '', $message->getOriginNumber());
     $name = '';
     $phone = [
@@ -94,7 +97,7 @@ class TaskInterationService
 
   public function notifyClient(TaskInteration $taskInteration): TaskInteration
   {
-
+    if (!$this->notify) return $taskInteration;
     $task = $taskInteration->getTask();
     $origin = "551131360353";
 
