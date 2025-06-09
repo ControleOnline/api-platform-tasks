@@ -3,7 +3,7 @@
 namespace ControleOnline\Entity;
 
 use Symfony\Component\Serializer\Attribute\Groups;
-
+use League\HTMLToMarkdown\HtmlConverter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\Get;
@@ -120,7 +120,8 @@ class TaskInteration
 
     public function setBody($body)
     {
-        $this->body = $body;
+        $converter = new HtmlConverter();
+        $this->body = $converter->convert($body);
         return $this;
     }
 
