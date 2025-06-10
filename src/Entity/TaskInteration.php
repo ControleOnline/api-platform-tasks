@@ -120,8 +120,9 @@ class TaskInteration
 
     public function setBody($body)
     {
-        $converter = new HtmlConverter();
-        $this->body = $converter->convert($body);
+        //        $converter = new HtmlConverter();
+        //        $this->body = $converter->convert($body);
+        $this->body = $body;
         return $this;
     }
 
