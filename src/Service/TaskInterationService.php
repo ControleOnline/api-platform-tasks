@@ -20,7 +20,8 @@ class TaskInterationService
     private StatusService $statusService,
     private PeopleService $peopleService,
     private FileService $fileService,
-    private IntegrationService $integrationService
+    private IntegrationService $integrationService,
+    private WhatsAppService $whatsAppService
   ) {}
 
   public function addClientInteration(MessageInterface $message, People $provider, string $type): TaskInteration
@@ -99,7 +100,11 @@ class TaskInterationService
   {
     if (!$this->notify) return $taskInteration;
     $task = $taskInteration->getTask();
-    $origin = "551131360353";
+    $connection = $this->whatsAppService->searchConnectionFromPeople($task->getProvider(), $task->getType());
+    if (!$connection) return $taskInteration;
+
+    $phone = $connection->getPhone();
+    $origin = $phone->getDdi() . $phone->getDdd() . $phone->getPhone();
 
     foreach ($task->getAnnounce(true) as $destination) {
       if ($origin != $destination) {
