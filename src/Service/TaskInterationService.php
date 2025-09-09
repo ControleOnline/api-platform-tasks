@@ -2,6 +2,7 @@
 
 namespace ControleOnline\Service;
 
+use ControleOnline\Entity\Connection;
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\Task;
 use ControleOnline\Entity\TaskInteration;
@@ -20,8 +21,7 @@ class TaskInterationService
     private StatusService $statusService,
     private PeopleService $peopleService,
     private FileService $fileService,
-    private IntegrationService $integrationService,
-    private WhatsAppService $whatsAppService
+    private IntegrationService $integrationService
   ) {}
 
   public function addClientInteration(MessageInterface $message, People $provider, string $type): TaskInteration
@@ -96,11 +96,16 @@ class TaskInterationService
     return $task;
   }
 
+  private function searchConnectionFromPeople(People $people, string $type): ?Connection
+  {
+    return $this->manager->getRepository(Connection::class)->findOneBy(['type' => $type, 'people' => $people]);
+  }
+
   public function notifyClient(TaskInteration $taskInteration): TaskInteration
   {
     if (!$this->notify) return $taskInteration;
     $task = $taskInteration->getTask();
-    $connection = $this->whatsAppService->searchConnectionFromPeople($task->getProvider(), $task->getType());
+    $connection = $this->searchConnectionFromPeople($task->getProvider(), $task->getType());
     if (!$connection) return $taskInteration;
 
     $phone = $connection->getPhone();
