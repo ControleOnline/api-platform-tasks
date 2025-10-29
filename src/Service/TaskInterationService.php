@@ -19,6 +19,7 @@ class TaskInterationService
     private EntityManagerInterface $manager,
     private Security $security,
     private StatusService $statusService,
+    private DomainService $domainService,
     private PeopleService $peopleService,
     private FileService $fileService,
     private IntegrationService $integrationService
@@ -96,16 +97,20 @@ class TaskInterationService
     return $task;
   }
 
-  private function searchConnectionFromPeople(People $people, string $type): ?Connection
+  public function searchConnectionFromPeople(People $people, string $type, $mainConnection = false): ?Connection
   {
-    return $this->manager->getRepository(Connection::class)->findOneBy(['type' => $type, 'people' => $people]);
+    $connection =  $this->manager->getRepository(Connection::class)->findOneBy(['type' => $type, 'people' => $people]);
+    if (!$connection && $mainConnection)
+      $connection =  $this->manager->getRepository(Connection::class)->findOneBy(['type' => $type, 'people' => $this->domainService->getPeopleDomain()->getPeople()]);
+
+    return $connection;
   }
 
   public function notifyClient(TaskInteration $taskInteration): TaskInteration
   {
     if (!$this->notify) return $taskInteration;
     $task = $taskInteration->getTask();
-    $connection = $this->searchConnectionFromPeople($task->getProvider(), $task->getType());
+    $connection = $this->searchConnectionFromPeople($task->getProvider(), $task->getType(), true);
     if (!$connection) return $taskInteration;
 
     $phone = $connection->getPhone();
