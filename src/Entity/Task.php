@@ -22,7 +22,7 @@ use ControleOnline\Entity\Status;
 use ControleOnline\Entity\Category;
 use ControleOnline\Entity\Order;
 use ControleOnline\Repository\TaskRepository;
-use ControleOnline\Listener\LogListener;
+
 use DateTime;
 use DateTimeInterface;
 use stdClass;
