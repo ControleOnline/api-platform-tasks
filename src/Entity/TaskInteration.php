@@ -20,7 +20,7 @@ use DateTime;
 use DateTimeInterface;
 
 #[ORM\Table(name: 'task_interations')]
-#[ORM\EntityListeners([LogListener::class])]
+
 #[ORM\Entity(repositoryClass: TaskInterationRepository::class)]
 #[ApiResource(
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => 'text/csv'],
