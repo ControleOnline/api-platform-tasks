@@ -22,10 +22,12 @@ class TaskInterationService
     private DomainService $domainService,
     private PeopleService $peopleService,
     private FileService $fileService,
-    private IntegrationService $integrationService
+    private IntegrationService $integrationService,
+    private AutomationMessagesService $automationMessagesService,
+
   ) {}
 
-  public function addClientInteration(MessageInterface $message, People $provider, string $type): TaskInteration
+  public function addClientInteration(MessageInterface $message, Connection $connection, string $type): TaskInteration
   {
 
     $this->notify = false;
@@ -37,9 +39,12 @@ class TaskInterationService
       'phone' => substr($number, 4)
     ];
     $registredBy = $this->peopleService->discoveryPeople(null,  null,  $phone,  $name, null);
-    $task = $this->discoveryOpenTask($provider, $registredBy, $type, $number);
+    $task = $this->discoveryOpenTask($connection->getPeople(), $registredBy, $type, $number);
+
+    $this->automationMessagesService->receiveMessage($message, $connection,$task);
 
     return $this->addInteration($registredBy, $message, $task, $type, 'public');
+
   }
 
   public function addInteration(People $registredBy, MessageInterface $message, Task $task, string $type, ?string $visibility = 'private')
