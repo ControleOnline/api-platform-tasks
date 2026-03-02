@@ -49,7 +49,8 @@ class TaskService
     $task->setTaskStatus($this->statusService->discoveryStatus('open', 'open', $context));
     $task->setAnnounce($phones);
     $task->setType($context);
-
+    $task->setClient($client);
+    
 
     $this->manager->persist($task);
     $this->manager->flush();
