@@ -21,8 +21,6 @@ class TaskService
     private Security $security,
     private RequestStack $requestStack,
     private StatusService $statusService,
-    private PeopleService $peopleService,
-    private FileService $fileService
   ) {
     $this->request = $this->requestStack->getCurrentRequest();
   }
