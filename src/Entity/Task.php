@@ -141,6 +141,7 @@ class Task
     {
         $this->createdAt = new DateTime('now');
         $this->alterDate = new DateTime('now');
+        $this->dueDate = new DateTime('now');
         $this->announce = json_encode(new stdClass());
     }
 
