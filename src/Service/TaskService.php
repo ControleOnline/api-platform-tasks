@@ -4,6 +4,7 @@ namespace ControleOnline\Service;
 
 use ControleOnline\Entity\People;
 use ControleOnline\Entity\Task;
+use ControleOnline\Entity\Phone;
 use ControleOnline\Entity\TaskInteration;
 use ControleOnline\Messages\MessageInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,6 +26,38 @@ class TaskService
   ) {
     $this->request = $this->requestStack->getCurrentRequest();
   }
+
+
+  public function addTask(
+    People $provider,
+    People $taskFor,
+    People $client,
+    string $context
+  ): Task {
+
+
+    $phones = [];
+    /**
+     * @var Phone $phone
+     */
+    foreach ($client->getPhone() as $phone) {
+      $phones[] = $phone->getDdi() . $phone->getDdd() . $phone->getPhone();
+    }
+
+    $task = new Task();
+    $task->setRegisteredBy($this->security->getToken()->getUser()->getPeople());
+    $task->setTaskFor($taskFor);
+    $task->setProvider($provider);
+    $task->setTaskStatus($this->statusService->discoveryStatus('open', 'open', $context));
+    $task->setAnnounce($phones);
+
+
+    $this->manager->persist($task);
+    $this->manager->flush();
+
+    return $task;
+  }
+
 
   public function securityFilter(QueryBuilder $queryBuilder, $resourceClass = null, $applyTo = null, $rootAlias = null): void
   {
