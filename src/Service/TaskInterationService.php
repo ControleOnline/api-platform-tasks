@@ -39,7 +39,7 @@ class TaskInterationService
       'phone' => substr($number, 4)
     ];
     $registredBy = $this->peopleService->discoveryPeople(null,  null,  $phone,  $name, null);
-    $task = $this->discoveryOpenTask($connection->getPeople(), $registredBy, $type, $number);
+    $task = $this->discoveryOpenTask($connection->getPeople(), $registredBy, $registredBy, $type, $number);
 
     $this->automationMessagesService->receiveMessage($message, $connection,$task);
 
@@ -74,7 +74,7 @@ class TaskInterationService
     return $taskInteration;
   }
 
-  public function discoveryOpenTask(People $provider, People $registredBy, string $type, ?string $announce = null): Task
+  public function discoveryOpenTask(People $provider, People $client, People $registredBy, string $type, ?string $announce = null): Task
   {
 
     $openStatus = $this->statusService->discoveryStatus('open', 'open', $type);
@@ -83,6 +83,7 @@ class TaskInterationService
     $task = $this->manager->getRepository(Task::class)->findOneBy([
       'taskStatus' => [$openStatus, $pendingStatus],
       'provider' => $provider,
+      'client' => $client,
       'registeredBy' => $registredBy,
       'type' => $type
     ]);
@@ -91,6 +92,7 @@ class TaskInterationService
       $task = new Task();
       $task->setRegisteredBy($registredBy);
       $task->setProvider($provider);
+      $task->setClient($client);
       $task->settype($type);
     }
 
