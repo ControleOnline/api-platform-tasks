@@ -41,13 +41,12 @@ class TaskInterationService
     $registredBy = $this->peopleService->discoveryPeople(null,  null,  $phone,  $name, null);
     $task = $this->discoveryOpenTask($connection->getPeople(), $registredBy, $registredBy, $type, $number);
 
-    $this->automationMessagesService->receiveMessage($message, $connection,$task);
+    $this->automationMessagesService->receiveMessage($message, $connection, $task);
 
     return $this->addInteration($registredBy, $message, $task, $type, 'public');
-
   }
 
-  public function addInteration(People $registredBy, MessageInterface $message, Task $task, string $type, ?string $visibility = 'private')
+  public function addInteration(People $registredBy, MessageInterface $message, Task $task, string $type, ?string $visibility = 'private'): TaskInteration
   {
 
     $file = null;
