@@ -34,17 +34,17 @@ use stdClass;
     formats: ['jsonld', 'json', 'html', 'jsonhal', 'csv' => 'text/csv'],
     normalizationContext: ['groups' => ['task:read']],
     denormalizationContext: ['groups' => ['task:write']],
-    security: "is_granted('ROLE_CLIENT')",
+    security: "is_granted('ROLE_HUMAN')",
     operations: [
         new GetCollection(
-            security: "is_granted('ROLE_CLIENT')",
+            security: "is_granted('ROLE_HUMAN')",
             uriTemplate: '/tasks'
         ),
-        new Get(security: "is_granted('ROLE_CLIENT')"),
-        new Post(security: "is_granted('ROLE_CLIENT')"),
-        new Put(security: "is_granted('ROLE_CLIENT')"),
-        new Patch(security: "is_granted('ROLE_CLIENT')"),
-        new Delete(security: "is_granted('ROLE_CLIENT')")
+        new Get(security: "is_granted('ROLE_HUMAN')"),
+        new Post(security: "is_granted('ROLE_HUMAN')"),
+        new Put(security: "is_granted('ROLE_HUMAN')"),
+        new Patch(security: "is_granted('ROLE_HUMAN')"),
+        new Delete(security: "is_granted('ROLE_HUMAN')")
     ]
 )]
 #[ApiFilter(OrderFilter::class, properties: ['dueDate' => 'ASC', 'alterDate' => 'DESC'])]
