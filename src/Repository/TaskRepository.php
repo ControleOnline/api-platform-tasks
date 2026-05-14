@@ -18,4 +18,22 @@ class TaskRepository extends ServiceEntityRepository
   {
     parent::__construct($registry, Task::class);
   }
+
+  public function findOverduePendingTasksByTypeAndStatus(
+    string $type,
+    object $status,
+    \DateTimeInterface $referenceTime
+  ): array {
+    return $this->createQueryBuilder('task')
+      ->andWhere('task.type = :type')
+      ->andWhere('task.taskStatus = :status')
+      ->andWhere('task.dueDate IS NOT NULL')
+      ->andWhere('task.dueDate <= :referenceTime')
+      ->setParameter('type', $type)
+      ->setParameter('status', $status)
+      ->setParameter('referenceTime', $referenceTime)
+      ->orderBy('task.dueDate', 'ASC')
+      ->getQuery()
+      ->getResult();
+  }
 }
