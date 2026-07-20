@@ -78,9 +78,6 @@ final class Version20260714190000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        $this->addSql('SET FOREIGN_KEY_CHECKS=0');
-        $this->addSql('DROP TABLE IF EXISTS `tasks`');
-        $this->addSql('DROP TABLE IF EXISTS `task_interations`');
-        $this->addSql('SET FOREIGN_KEY_CHECKS=1');
+        return;
     }
 }
