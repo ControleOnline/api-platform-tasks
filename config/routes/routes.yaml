@@ -1,0 +1,3 @@
+controleonline_tasks:
+    resource: ../../src/Controller/
+    type: attribute
