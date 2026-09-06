@@ -3,6 +3,7 @@
 namespace ControleOnline\Tests\Service;
 
 use ControleOnline\Entity\Task;
+use ControleOnline\Entity\Status;
 use ControleOnline\Repository\TaskRepository;
 use ControleOnline\Service\OverdueOpportunityMaintenanceService;
 use ControleOnline\Service\StatusService;
@@ -14,8 +15,8 @@ class OverdueOpportunityMaintenanceServiceTest extends TestCase
     public function testOpensOnlyOverduePendingOpportunitiesAndFlushesOnce(): void
     {
         $referenceTime = new \DateTimeImmutable('2026-04-29 00:00:00');
-        $pendingStatus = new \stdClass();
-        $openStatus = new \stdClass();
+        $pendingStatus = new Status();
+        $openStatus = new Status();
 
         $firstTask = $this->createTask(10, $pendingStatus);
         $secondTask = $this->createTask(11, $pendingStatus);
@@ -60,8 +61,8 @@ class OverdueOpportunityMaintenanceServiceTest extends TestCase
     public function testSkipsFlushWhenNoOpportunityNeedsTransition(): void
     {
         $referenceTime = new \DateTimeImmutable('2026-04-29 00:00:00');
-        $pendingStatus = new \stdClass();
-        $openStatus = new \stdClass();
+        $pendingStatus = new Status();
+        $openStatus = new Status();
 
         $repository = $this->createMock(TaskRepository::class);
         $repository
