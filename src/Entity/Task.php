@@ -292,6 +292,12 @@ class Task
         return $this->alterDate;
     }
 
+    public function setAlterDate($alterDate): self
+    {
+        $this->alterDate = $alterDate;
+        return $this;
+    }
+
     public function getAnnounce(bool $decode = false): string|array
     {
         // Ensure we're decoding a string, even if it was temporarily an array internally
