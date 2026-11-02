@@ -1,13 +1,13 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "rc": 1,
-  "branch": "rc/1.0.2-rc.1",
-  "baseMaster": "147342125b94a6599c819b9eed089efb6b5e20ad",
+  "branch": "rc/1.0.3-rc.1",
+  "baseMaster": "b316e289fdc35c97b6f4934afb3256bbfed0137d",
   "tasks": [
-    167
+    1284
   ],
+  "frozen": true,
   "repositories": {
-    "ControleOnline/api-platform-tasks": "1fedb080e8d19fef10a34e35ff49bb3e24fc5434"
-  },
-  "frozen": true
+    "ControleOnline/api-platform-tasks": "72e4da29b8263bc37c32896a632fe0441dd29027"
+  }
 }
