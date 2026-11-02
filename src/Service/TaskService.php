@@ -72,6 +72,36 @@ class TaskService
     return $task;
   }
 
+  /**
+   * Creates an AI chat Task (type=ia) scoped to the company (provider).
+   * client defaults to the company; announce holds channel/provider metadata.
+   *
+   * @param array<string, mixed> $announceMeta
+   */
+  public function addIaTask(
+    People $company,
+    string $name,
+    array $announceMeta = []
+  ): Task {
+    $user = $this->security->getToken()?->getUser();
+    $registeredBy = $user && method_exists($user, 'getPeople') ? $user->getPeople() : $company;
+
+    $task = new Task();
+    $task->setName(mb_substr($name !== '' ? $name : 'Chat IA', 0, 50));
+    $task->setRegisteredBy($registeredBy);
+    $task->setTaskFor($registeredBy);
+    $task->setProvider($company);
+    $task->setClient($company);
+    $task->setType('ia');
+    $task->setTaskStatus($this->statusService->discoveryStatus('open', 'open', 'ia'));
+    $meta = array_merge(['channel' => 'mcp'], $announceMeta);
+    $task->setAnnounce($meta);
+
+    $this->manager->persist($task);
+    $this->manager->flush();
+
+    return $task;
+  }
 
   public function securityFilter(QueryBuilder $queryBuilder, $resourceClass = null, $applyTo = null, $rootAlias = null): void
   {
