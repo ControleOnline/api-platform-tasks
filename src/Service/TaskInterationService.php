@@ -8,6 +8,7 @@ use ControleOnline\Entity\Task;
 use ControleOnline\Entity\TaskInteration;
 use ControleOnline\Messages\MessageInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\QueryBuilder;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface as Security;
 
 class TaskInterationService
@@ -284,6 +285,28 @@ class TaskInterationService
       if (is_string($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) $out[] = strtolower($value);
     }
     return array_values(array_unique($out));
+  }
+
+  /**
+   * API reads (FilterCollectionByExtension): private interactions (internal notes, internal /ai chats)
+   * are visible only to their author and to employees of the task's provider. A customer reading
+   * their own ticket never sees the provider's internal notes. Contexts without a user (workers) are untouched.
+   */
+  public function securityFilter(QueryBuilder $queryBuilder, $resourceClass = null, $applyTo = null, $rootAlias = null): void
+  {
+    $me = $this->peopleService->getMyPeople();
+    if (!$me) return;
+    $companies = $this->peopleService->getMyCompanies();
+
+    $queryBuilder
+      ->leftJoin(sprintf('%s.task', $rootAlias), 'tiSecurityTask')
+      ->andWhere(sprintf(
+        "%s.visibility <> 'private' OR %s.registeredBy = :tiSecurityMe OR tiSecurityTask.provider IN (:tiSecurityCompanies)",
+        $rootAlias,
+        $rootAlias
+      ))
+      ->setParameter('tiSecurityMe', $me)
+      ->setParameter('tiSecurityCompanies', $companies ?: [0]);
   }
 
   public function prePersist(TaskInteration $taskInteration): TaskInteration
