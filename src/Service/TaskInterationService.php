@@ -46,6 +46,49 @@ class TaskInterationService
     return $this->addInteration($registredBy, $message, $task, $type, 'public');
   }
 
+  /**
+   * Every inbound customer message (WhatsApp official/QR or e-mail) enters here.
+   *
+   * - joins the customer's open conversation in ia|relationship|support, if any;
+   * - otherwise opens one: "ia" with an AI assigned when the company has an AI configured,
+   *   or the connection type (relationship/support) for humans only;
+   * - remembers the destination and the connection it came through ("conn:{id}"),
+   *   so every reply leaves through the same number/mailbox.
+   */
+  public function receiveCustomerMessage(MessageInterface $message, Connection $connection, string $name, bool $aiAvailable): TaskInteration
+  {
+    $this->notify = false;
+    try {
+      $isEmail = method_exists($connection, 'isEmail') && $connection->isEmail();
+      $origin = trim($message->getOriginNumber());
+      if ($isEmail) {
+        $destination = strtolower($origin);
+        $client = $this->peopleService->discoveryPeople(null, $destination, [], $name ?: $destination, null);
+      } else {
+        $destination = preg_replace('/\D/', '', $origin);
+        $phone = ['ddi' => substr($destination, 0, 2), 'ddd' => substr($destination, 2, 2), 'phone' => substr($destination, 4)];
+        $client = $this->peopleService->discoveryPeople(null, null, $phone, $name, null);
+      }
+      $provider = $connection->getPeople();
+
+      $task = $this->findOpenConversationTask($provider, $client);
+      if (!$task) {
+        $type = $aiAvailable ? 'ia' : (in_array($connection->getType(), ['relationship', 'support'], true) ? $connection->getType() : 'support');
+        $task = $this->discoveryOpenTask($provider, $client, $client, $type, $destination);
+        if ($aiAvailable) $task->setAiAgent('auto');
+        if (!$task->getName())
+          $task->setName(mb_substr(($isEmail ? 'E-mail ' : 'WhatsApp ') . ($name ?: $destination), 0, 50));
+      }
+      $task->addAnnounce($destination);
+      $task->addAnnounce(self::CONNECTION_MARKER . $connection->getId());
+      $task->setAlterDate(new \DateTime('now'));
+
+      return $this->addInteration($client, $message, $task, 'comment', 'public');
+    } finally {
+      $this->notify = true;
+    }
+  }
+
   public function addInteration(People $registredBy, MessageInterface $message, Task $task, string $type, ?string $visibility = 'private'): TaskInteration
   {
 
@@ -112,30 +155,135 @@ class TaskInterationService
     return $connection;
   }
 
+  /**
+   * Conversation types that may receive a customer channel message (WhatsApp).
+   * "ia" is the AI front door; relationship/support are human handoff targets.
+   */
+  public const CONVERSATION_TYPES = ['ia', 'relationship', 'support'];
+
+  /** Announce marker "conn:{id}": the connection the conversation came through (replies use it). */
+  public const CONNECTION_MARKER = 'conn:';
+
+  /**
+   * Finds the open/pending conversation of a customer with a company in any
+   * conversation type, so a task handed off from the AI keeps receiving messages.
+   */
+  public function findOpenConversationTask(People $provider, People $client, array $types = self::CONVERSATION_TYPES): ?Task
+  {
+    $statuses = [];
+    foreach ($types as $type) {
+      $statuses[] = $this->statusService->discoveryStatus('open', 'open', $type);
+      $statuses[] = $this->statusService->discoveryStatus('pending', 'pending', $type);
+    }
+
+    return $this->manager->getRepository(Task::class)->findOneBy([
+      'taskStatus' => $statuses,
+      'provider' => $provider,
+      'client' => $client,
+      'type' => $types,
+    ], ['id' => 'DESC']);
+  }
+
+  /**
+   * Customer-channel reply for the task. Rules:
+   * - only public interactions leave the system (private notes and the internal /ai chat never do);
+   * - destinations come from announce (phones for WhatsApp, addresses for e-mail);
+   * - the reply leaves through the connection the conversation came in ("conn:{id}"), else
+   *   one of the company's connections (task type, then any), else the main domain.
+   */
   public function notifyClient(TaskInteration $taskInteration): TaskInteration
   {
     if (!$this->notify) return $taskInteration;
+    if ($taskInteration->getVisibility() !== 'public') return $taskInteration;
+
     $task = $taskInteration->getTask();
-    $connection = $this->searchConnectionFromPeople($task->getProvider(), $task->getType(), true);
+    $author = $taskInteration->getRegisteredBy();
+    // The customer's own message is never echoed back to them.
+    if ($author && $author->getId() === $task->getClient()?->getId()) return $taskInteration;
+
+    // An employee answering the customer takes the conversation from the AI.
+    if ($author && $author->getId() !== $task->getProvider()?->getId() && $task->getAiAgent()) {
+      $task->setAiAgent(null);
+      $this->manager->flush();
+    }
+
+    $announce = $task->getAnnounce(true);
+    if (!array_is_list($announce)) return $taskInteration;
+
+    $connection = $this->resolveNotifyConnection($task, $announce);
     if (!$connection) return $taskInteration;
 
+    if (method_exists($connection, 'isEmail') && $connection->isEmail()) {
+      foreach ($this->emailDestinations($announce) as $to) {
+        $this->integrationService->addIntegration((string) json_encode([
+          'connection_id' => $connection->getId(),
+          'task_id' => $task->getId(),
+          'to' => $to,
+          'subject' => 'Re: ' . $task->getName(),
+          'message' => $taskInteration->getBody(),
+        ], JSON_UNESCAPED_UNICODE), 'EmailOutbound', null, null, $task->getProvider());
+      }
+      return $taskInteration;
+    }
+
     $phone = $connection->getPhone();
+    if (!$phone) return $taskInteration;
     $origin = $phone->getDdi() . $phone->getDdd() . $phone->getPhone();
 
-    foreach ($task->getAnnounce(true) as $destination) {
-      if ($origin != $destination) {
-        $message = json_encode([
-          "action" => "sendMessage",
-          "origin" => $origin,
-          "destination" => $destination,
-          "message" => $taskInteration->getBody(),
-          //"file" => $taskInteration->getFile()
-        ]);
-        $this->integrationService->addIntegration($message, 'WhatsApp', null, null, $task->getProvider());
+    foreach ($this->phoneDestinations($announce) as $destination) {
+      if ($origin == $destination) continue;
+      $this->integrationService->addIntegration((string) json_encode([
+        "action" => "sendMessage",
+        "origin" => $origin,
+        "destination" => $destination,
+        "message" => $taskInteration->getBody(),
+      ]), 'WhatsApp', null, null, $task->getProvider());
+    }
+
+    return $taskInteration;
+  }
+
+  private function resolveNotifyConnection(Task $task, array $announce): ?Connection
+  {
+    $provider = $task->getProvider();
+    foreach ($announce as $value) {
+      if (is_string($value) && str_starts_with($value, self::CONNECTION_MARKER)) {
+        $connection = $this->manager->getRepository(Connection::class)->find((int) substr($value, strlen(self::CONNECTION_MARKER)));
+        if ($connection && $connection->getPeople()?->getId() === $provider?->getId()) return $connection;
       }
     }
 
-    return  $taskInteration;
+    $wantsEmail = $this->phoneDestinations($announce) === [] && $this->emailDestinations($announce) !== [];
+    foreach ($this->manager->getRepository(Connection::class)->findBy(['people' => $provider]) as $connection) {
+      $isEmail = method_exists($connection, 'isEmail') && $connection->isEmail();
+      if ($isEmail === $wantsEmail && $connection->getType() === $task->getType()) return $connection;
+    }
+    foreach ($this->manager->getRepository(Connection::class)->findBy(['people' => $provider]) as $connection) {
+      $isEmail = method_exists($connection, 'isEmail') && $connection->isEmail();
+      if ($isEmail === $wantsEmail) return $connection;
+    }
+
+    return $wantsEmail ? null : $this->searchConnectionFromPeople($provider, (string) $task->getType(), true);
+  }
+
+  /** @return list<string> */
+  public function phoneDestinations(array $announce): array
+  {
+    $out = [];
+    foreach ($announce as $value) {
+      if (is_scalar($value) && preg_match('/^\d{10,15}$/', (string) $value)) $out[] = (string) $value;
+    }
+    return array_values(array_unique($out));
+  }
+
+  /** @return list<string> */
+  public function emailDestinations(array $announce): array
+  {
+    $out = [];
+    foreach ($announce as $value) {
+      if (is_string($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) $out[] = strtolower($value);
+    }
+    return array_values(array_unique($out));
   }
 
   public function prePersist(TaskInteration $taskInteration): TaskInteration

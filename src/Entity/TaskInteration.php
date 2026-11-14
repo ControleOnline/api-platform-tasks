@@ -40,7 +40,8 @@ use DateTimeInterface;
     'registeredBy' => 'exact',
     'type' => 'exact',
     'visibility' => 'exact',
-    'read' => 'exact'
+    'read' => 'exact',
+    'status' => 'exact'
 ])]
 class TaskInteration
 {
@@ -57,6 +58,10 @@ class TaskInteration
     #[ORM\Column(name: 'visibility', type: 'string', length: 50, nullable: false)]
     #[Groups(['task_interaction:read', 'task_interaction:write'])]
     private $visibility;
+
+    #[ORM\Column(name: 'status', type: 'string', length: 50, nullable: false, options: ['default' => 'done'])]
+    #[Groups(['task_interaction:read', 'task_interaction:write'])]
+    private $status = 'done';
 
     #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['task_interaction:read', 'task_interaction:write'])]
@@ -93,6 +98,7 @@ class TaskInteration
     {
         $this->createdAt = new DateTime('now');
         $this->visibility = 'private';
+        $this->status = 'done';
         $this->read = 0;
         $this->notified = 0;
     }
@@ -179,6 +185,17 @@ class TaskInteration
     public function setVisibility($visibility): self
     {
         $this->visibility = $visibility;
+        return $this;
+    }
+
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    public function setStatus($status): self
+    {
+        $this->status = $status;
         return $this;
     }
 
