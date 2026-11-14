@@ -58,7 +58,9 @@ use stdClass;
     'category' => 'exact',
     'client' => 'exact',
     'order' => 'exact',
-    'type' => 'exact'
+    'type' => 'exact',
+    // Lets /ai list customer conversations that entered through the AI (announce contains "via:ia").
+    'announce' => 'partial'
 ])]
 class Task
 {
