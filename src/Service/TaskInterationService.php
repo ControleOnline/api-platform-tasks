@@ -197,6 +197,16 @@ class TaskInterationService
     if ($taskInteration->getVisibility() !== 'public') return $taskInteration;
 
     $task = $taskInteration->getTask();
+    $author = $taskInteration->getRegisteredBy();
+    // The customer's own message is never echoed back to them.
+    if ($author && $author->getId() === $task->getClient()?->getId()) return $taskInteration;
+
+    // An employee answering the customer takes the conversation from the AI.
+    if ($author && $author->getId() !== $task->getProvider()?->getId() && $task->getAiAgent()) {
+      $task->setAiAgent(null);
+      $this->manager->flush();
+    }
+
     $announce = $task->getAnnounce(true);
     if (!array_is_list($announce)) return $taskInteration;
 
