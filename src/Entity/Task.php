@@ -14,6 +14,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -58,8 +59,12 @@ use stdClass;
     'category' => 'exact',
     'client' => 'exact',
     'order' => 'exact',
-    'type' => 'exact'
+    'type' => 'exact',
+    // Lets /ai list customer conversations that entered through the AI (announce contains "via:ia").
+    'announce' => 'partial',
+    'aiAgent' => 'exact'
 ])]
+#[ApiFilter(ExistsFilter::class, properties: ['aiAgent'])]
 class Task
 {
     #[ORM\Column(type: 'integer', nullable: false)]
@@ -132,6 +137,11 @@ class Task
     #[ORM\Column(name: 'alter_date', type: 'datetime', nullable: true, columnDefinition: 'DATETIME')]
     #[Groups(['task:write', 'task:read', 'order:read'])]
     private $alterDate;
+
+    /** AI assigned to this conversation (provider key or "auto"); null = humans only. */
+    #[ORM\Column(name: 'ai_agent', type: 'string', length: 50, nullable: true)]
+    #[Groups(['task:write', 'task:read'])]
+    private ?string $aiAgent = null;
 
     #[ORM\Column(name: 'announce', type: 'string', nullable: true)]
     #[Groups(['task:write', 'task:read', 'order:read'])]
@@ -285,6 +295,24 @@ class Task
     public function getCreatedAt()
     {
         return $this->createdAt;
+    }
+
+    public function setAlterDate(\DateTimeInterface $alterDate): self
+    {
+        $this->alterDate = $alterDate;
+        return $this;
+    }
+
+    public function getAiAgent(): ?string
+    {
+        return $this->aiAgent;
+    }
+
+    public function setAiAgent(?string $aiAgent): self
+    {
+        $aiAgent = $aiAgent !== null ? trim($aiAgent) : null;
+        $this->aiAgent = $aiAgent === '' ? null : $aiAgent;
+        return $this;
     }
 
     public function getAlterDate()
