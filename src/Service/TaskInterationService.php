@@ -112,30 +112,90 @@ class TaskInterationService
     return $connection;
   }
 
+  /**
+   * Conversation types that may receive a customer channel message (WhatsApp).
+   * "ia" is the AI front door; relationship/support are human handoff targets.
+   */
+  public const CONVERSATION_TYPES = ['ia', 'relationship', 'support'];
+
+  /**
+   * Finds the open/pending conversation of a customer with a company in any
+   * conversation type, so a task handed off from the AI keeps receiving messages.
+   */
+  public function findOpenConversationTask(People $provider, People $client, array $types = self::CONVERSATION_TYPES): ?Task
+  {
+    $statuses = [];
+    foreach ($types as $type) {
+      $statuses[] = $this->statusService->discoveryStatus('open', 'open', $type);
+      $statuses[] = $this->statusService->discoveryStatus('pending', 'pending', $type);
+    }
+
+    return $this->manager->getRepository(Task::class)->findOneBy([
+      'taskStatus' => $statuses,
+      'provider' => $provider,
+      'client' => $client,
+      'type' => $types,
+    ], ['id' => 'DESC']);
+  }
+
+  /**
+   * Customer-channel reply for the task. Rules:
+   * - only public interactions leave the system (private notes and the internal /ai chat never do);
+   * - only numeric destinations are used (web /ai tasks keep a JSON object in announce);
+   * - connection lookup: task type -> company "ia" connection (handoff keeps the same number) -> main domain.
+   */
   public function notifyClient(TaskInteration $taskInteration): TaskInteration
   {
     if (!$this->notify) return $taskInteration;
+    if ($taskInteration->getVisibility() !== 'public') return $taskInteration;
+
     $task = $taskInteration->getTask();
-    $connection = $this->searchConnectionFromPeople($task->getProvider(), $task->getType(), true);
-    if (!$connection) return $taskInteration;
+    $destinations = $this->extractPhoneDestinations($task->getAnnounce(true));
+    if ($destinations === []) return $taskInteration;
+
+    $connection = $this->resolveNotifyConnection($task);
+    if (!$connection || !$connection->getPhone()) return $taskInteration;
 
     $phone = $connection->getPhone();
     $origin = $phone->getDdi() . $phone->getDdd() . $phone->getPhone();
 
-    foreach ($task->getAnnounce(true) as $destination) {
-      if ($origin != $destination) {
-        $message = json_encode([
-          "action" => "sendMessage",
-          "origin" => $origin,
-          "destination" => $destination,
-          "message" => $taskInteration->getBody(),
-          //"file" => $taskInteration->getFile()
-        ]);
-        $this->integrationService->addIntegration($message, 'WhatsApp', null, null, $task->getProvider());
-      }
+    foreach ($destinations as $destination) {
+      if ($origin == $destination) continue;
+      $message = json_encode([
+        "action" => "sendMessage",
+        "origin" => $origin,
+        "destination" => $destination,
+        "message" => $taskInteration->getBody(),
+      ]);
+      $this->integrationService->addIntegration($message, 'WhatsApp', null, null, $task->getProvider());
     }
 
     return  $taskInteration;
+  }
+
+  private function resolveNotifyConnection(Task $task): ?Connection
+  {
+    $provider = $task->getProvider();
+    $connection = $this->searchConnectionFromPeople($provider, (string) $task->getType());
+    if (!$connection && $task->getType() !== 'ia')
+      $connection = $this->searchConnectionFromPeople($provider, 'ia');
+    if (!$connection)
+      $connection = $this->searchConnectionFromPeople($provider, (string) $task->getType(), true);
+
+    return $connection;
+  }
+
+  /** @return list<string> */
+  private function extractPhoneDestinations(array $announce): array
+  {
+    if (!array_is_list($announce)) return [];
+    $out = [];
+    foreach ($announce as $value) {
+      $digits = preg_replace('/\D/', '', (string) $value);
+      if (is_scalar($value) && strlen($digits) >= 10 && $digits === (string) $value)
+        $out[] = $digits;
+    }
+    return array_values(array_unique($out));
   }
 
   public function prePersist(TaskInteration $taskInteration): TaskInteration
