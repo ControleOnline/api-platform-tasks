@@ -46,6 +46,35 @@ class TaskInterationService
     return $this->addInteration($registredBy, $message, $task, $type, 'public');
   }
 
+  /**
+   * Inbound customer message for an AI front-door connection (connection.type = ia).
+   * Reuses the customer's open conversation in ia|relationship|support (a task handed
+   * off to a human keeps the thread); otherwise opens a new "ia" task.
+   */
+  public function addClientConversationInteration(MessageInterface $message, Connection $connection, string $name = ''): TaskInteration
+  {
+    $this->notify = false;
+    $number = preg_replace('/\D/', '', $message->getOriginNumber());
+    $phone = [
+      'ddi' => substr($number, 0, 2),
+      'ddd' => substr($number, 2, 2),
+      'phone' => substr($number, 4)
+    ];
+    $client = $this->peopleService->discoveryPeople(null, null, $phone, $name, null);
+    $provider = $connection->getPeople();
+
+    $task = $this->findOpenConversationTask($provider, $client)
+      ?? $this->discoveryOpenTask($provider, $client, $client, 'ia', $number);
+    $task->addAnnounce($number);
+    $task->setAlterDate(new \DateTime('now'));
+
+    try {
+      return $this->addInteration($client, $message, $task, 'comment', 'public');
+    } finally {
+      $this->notify = true;
+    }
+  }
+
   public function addInteration(People $registredBy, MessageInterface $message, Task $task, string $type, ?string $visibility = 'private'): TaskInteration
   {
 
