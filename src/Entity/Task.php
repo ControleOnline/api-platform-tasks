@@ -287,6 +287,12 @@ class Task
         return $this->createdAt;
     }
 
+    public function setAlterDate(\DateTimeInterface $alterDate): self
+    {
+        $this->alterDate = $alterDate;
+        return $this;
+    }
+
     public function getAlterDate()
     {
         return $this->alterDate;
