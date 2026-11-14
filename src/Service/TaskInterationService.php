@@ -66,6 +66,7 @@ class TaskInterationService
     $task = $this->findOpenConversationTask($provider, $client)
       ?? $this->discoveryOpenTask($provider, $client, $client, 'ia', $number);
     $task->addAnnounce($number);
+    $task->addAnnounce(self::VIA_IA_MARKER);
     $task->setAlterDate(new \DateTime('now'));
 
     try {
@@ -147,6 +148,9 @@ class TaskInterationService
    */
   public const CONVERSATION_TYPES = ['ia', 'relationship', 'support'];
 
+  /** Non-numeric announce marker: the conversation entered through the company's "ia" connection. */
+  public const VIA_IA_MARKER = 'via:ia';
+
   /**
    * Finds the open/pending conversation of a customer with a company in any
    * conversation type, so a task handed off from the AI keeps receiving messages.
@@ -205,13 +209,17 @@ class TaskInterationService
   private function resolveNotifyConnection(Task $task): ?Connection
   {
     $provider = $task->getProvider();
-    $connection = $this->searchConnectionFromPeople($provider, (string) $task->getType());
-    if (!$connection && $task->getType() !== 'ia')
-      $connection = $this->searchConnectionFromPeople($provider, 'ia');
-    if (!$connection)
-      $connection = $this->searchConnectionFromPeople($provider, (string) $task->getType(), true);
+    $types = [(string) $task->getType()];
+    // A conversation that started with the AI keeps its number after a handoff.
+    if (in_array(self::VIA_IA_MARKER, $task->getAnnounce(true), true))
+      array_unshift($types, 'ia');
 
-    return $connection;
+    foreach (array_unique($types) as $type) {
+      $connection = $this->searchConnectionFromPeople($provider, $type);
+      if ($connection) return $connection;
+    }
+
+    return $this->searchConnectionFromPeople($provider, (string) $task->getType(), true);
   }
 
   /** @return list<string> */
