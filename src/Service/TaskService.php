@@ -35,6 +35,7 @@ class TaskService
     private Security $security,
     private RequestStack $requestStack,
     private StatusService $statusService,
+    private ?PeopleService $peopleService = null,
   ) {
     $this->request = $this->requestStack->getCurrentRequest();
   }
@@ -103,15 +104,26 @@ class TaskService
     return $task;
   }
 
+  /**
+   * A user only sees tasks of the companies they work for (provider, client or taskFor) and the ones
+   * where they are the client or the author. Without an authenticated person (worker, cron) nothing
+   * is filtered: background jobs run with their own tenant/company scoping.
+   */
   public function securityFilter(QueryBuilder $queryBuilder, $resourceClass = null, $applyTo = null, $rootAlias = null): void
   {
+    $me = $this->peopleService?->getMyPeople();
+    if (!$me) {
+      return;
+    }
+    $companies = $this->peopleService->getMyCompanies() ?: [0];
 
-    /*
-    $companies   = $this->peopleService->getMyCompanies();
-    $queryBuilder->andWhere(sprintf('%s.taskFor IN(:companies) OR %s.client IN(:companies) OR %s.provider IN(:companies) %s.registeredBy IN(:companies)', $rootAlias, $rootAlias));
-    $queryBuilder->setParameter('companies', $companies);
-    */
-
-    //echo $queryBuilder->getQuery()->getSQL();
+    $queryBuilder
+      ->andWhere(sprintf(
+        '%1$s.provider IN (:taskSecurityCompanies) OR %1$s.client IN (:taskSecurityCompanies) OR %1$s.taskFor IN (:taskSecurityCompanies)'
+          . ' OR %1$s.client = :taskSecurityMe OR %1$s.taskFor = :taskSecurityMe OR %1$s.registeredBy = :taskSecurityMe',
+        $rootAlias
+      ))
+      ->setParameter('taskSecurityCompanies', $companies)
+      ->setParameter('taskSecurityMe', $me);
   }
 }
