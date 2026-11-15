@@ -305,6 +305,13 @@ class TaskInterationService
         $rootAlias,
         $rootAlias
       ))
+      // Only interactions of tasks the user can see (same rule as TaskService::securityFilter).
+      ->andWhere(sprintf(
+        'tiSecurityTask.provider IN (:tiSecurityCompanies) OR tiSecurityTask.client IN (:tiSecurityCompanies)'
+          . ' OR tiSecurityTask.taskFor IN (:tiSecurityCompanies) OR tiSecurityTask.client = :tiSecurityMe'
+          . ' OR tiSecurityTask.taskFor = :tiSecurityMe OR tiSecurityTask.registeredBy = :tiSecurityMe OR %s.registeredBy = :tiSecurityMe',
+        $rootAlias
+      ))
       ->setParameter('tiSecurityMe', $me)
       ->setParameter('tiSecurityCompanies', $companies ?: [0]);
   }
