@@ -25,7 +25,7 @@ class TaskInterationService
     private FileService $fileService,
     private IntegrationService $integrationService,
     private AutomationMessagesService $automationMessagesService,
-
+    private ?TicketRulesService $ticketRules = null,
   ) {}
 
   public function addClientInteration(MessageInterface $message, Connection $connection, string $type): TaskInteration
@@ -320,6 +320,17 @@ class TaskInterationService
   {
     if (!$taskInteration->getRegisteredBy())
       $taskInteration->setRegisteredBy($this->security->getToken()->getUser()->getPeople());
+
+    // Requests (relationship/support): on the company side only the context's responders (or the
+    // company itself, i.e. its AI) may write; the customer side always may. Background jobs pass.
+    $task = $taskInteration->getTask();
+    $author = $taskInteration->getRegisteredBy();
+    $user = $this->security->getToken()?->getUser();
+    if ($this->ticketRules && is_object($user) && TicketRulesService::isTicket($task) && $author
+      && !$this->ticketRules->canReply($task, $author)) {
+      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException('Você não pode responder este chamado.');
+    }
+
     return  $taskInteration;
   }
 
