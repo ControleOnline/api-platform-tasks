@@ -90,7 +90,8 @@ class PublicContactController
             ->select('t')->from(Task::class, 't')->join('t.taskStatus', 's')
             ->where('t.provider = :company')->andWhere('t.client = :client')->andWhere('t.type = :type')
             ->andWhere('s.realStatus <> :closed')
-            ->setParameters(['company' => $company, 'client' => $client, 'type' => TicketRulesService::RELATIONSHIP, 'closed' => 'closed'])
+            ->setParameter('company', $company)->setParameter('client', $client)
+            ->setParameter('type', TicketRulesService::RELATIONSHIP)->setParameter('closed', 'closed')
             ->orderBy('t.id', 'DESC')->setMaxResults(1)
             ->getQuery()->getOneOrNullResult();
         if ($open instanceof Task) {
