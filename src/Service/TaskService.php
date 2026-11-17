@@ -36,6 +36,7 @@ class TaskService
     private RequestStack $requestStack,
     private StatusService $statusService,
     private ?PeopleService $peopleService = null,
+    private ?TicketRulesService $ticketRules = null,
   ) {
     $this->request = $this->requestStack->getCurrentRequest();
   }
@@ -100,6 +101,19 @@ class TaskService
 
     $this->manager->persist($task);
     $this->manager->flush();
+
+    return $task;
+  }
+
+  /** Requests are born without a responsible person: the distribution engine picks one. */
+  public function prePersist(Task $task): Task
+  {
+    if ($this->ticketRules && TicketRulesService::isTicket($task) && !$task->getTaskFor() && $task->getProvider()) {
+      $responsible = $this->ticketRules->pickResponsible($task->getProvider(), (string) $task->getType());
+      if ($responsible) {
+        $task->setTaskFor($responsible);
+      }
+    }
 
     return $task;
   }
