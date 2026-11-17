@@ -54,6 +54,8 @@ use stdClass;
     'taskFor' => 'exact',
     'registeredBy' => 'exact',
     'taskStatus' => 'exact',
+    'taskStatus.status' => 'exact',
+    'taskStatus.realStatus' => 'exact',
     'reason' => 'exact',
     'criticality' => 'exact',
     'category' => 'exact',
@@ -295,12 +297,6 @@ class Task
     public function getCreatedAt()
     {
         return $this->createdAt;
-    }
-
-    public function setAlterDate(\DateTimeInterface $alterDate): self
-    {
-        $this->alterDate = $alterDate;
-        return $this;
     }
 
     public function getAiAgent(): ?string
