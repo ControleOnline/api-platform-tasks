@@ -231,6 +231,9 @@ class TaskInterationService
     if (!$phone) return $taskInteration;
     $origin = $phone->getDdi() . $phone->getDdd() . $phone->getPhone();
 
+    // task_id lets the sender report failures (e.g. outside Meta's 24h window) back to the team;
+    // file_id sends the attachment (the official API uploads it as media).
+    $file = $taskInteration->getFile();
     foreach ($this->phoneDestinations($announce) as $destination) {
       if ($origin == $destination) continue;
       $this->integrationService->addIntegration((string) json_encode([
@@ -238,6 +241,8 @@ class TaskInterationService
         "origin" => $origin,
         "destination" => $destination,
         "message" => $taskInteration->getBody(),
+        "task_id" => $task->getId(),
+        "file_id" => $file?->getId(),
       ]), 'WhatsApp', null, null, $task->getProvider());
     }
 
