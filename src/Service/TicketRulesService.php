@@ -10,13 +10,16 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * Rules shared by the request (ticket) screens: relationship (CRM) and support.
  *
- * - Responders of a context: who may be the responsible person and answer on the company side.
- *   relationship: the company's salesmen (people_link salesman) + configured sales assistants.
- *   support: the people configured in the Manager (support-responders).
- * - Distribution: tickets are born without a responsible person; this engine picks one.
- * - The customer side (task client, its employees, the author) can always answer its own ticket.
+ * - relationship follows the CRM's own client distribution (no second setting): the request goes to the
+ *   salesman already linked to the client (people_link sellers-client/client); a client without one gets
+ *   a salesman from the CRM strategy (SalesmanDistributionService, salesman-distribution-strategy) and the
+ *   link is recorded so the next requests stay with the same salesman. Responders: the company salesmen.
+ * - support has its own rule, set in the Manager: the people who answer (support-responders) and the
+ *   strategy (support-distribution-strategy: random | least_open).
+ * - The customer side (task client, its employees, the author) and the request's responsible person can
+ *   always answer; on the company side only the context's responders (or the company itself, i.e. its AI).
  *
- * Settings are per company (multi-tenant): config rows of the ticket provider.
+ * Settings are per company (multi-tenant): config rows of the request provider.
  */
 class TicketRulesService
 {
@@ -26,15 +29,14 @@ class TicketRulesService
 
     public const SUPPORT_RESPONDERS = 'support-responders';
     public const SUPPORT_STRATEGY = 'support-distribution-strategy';
-    public const CRM_ASSISTANTS = 'crm-assistants';
-    /** Existing CRM setting (SalesmanDistributionService). */
-    public const CRM_STRATEGY = 'salesman-distribution-strategy';
-
     public const STRATEGIES = ['random', 'least_open'];
+
+    private const CLIENT_LINKS = ['sellers-client', 'client'];
 
     public function __construct(
         private EntityManagerInterface $manager,
         private ConfigService $configService,
+        private ?SalesmanDistributionService $salesmanDistribution = null,
     ) {}
 
     public static function isTicket(?Task $task): bool
@@ -45,21 +47,19 @@ class TicketRulesService
     /** @return list<People> */
     public function responders(People $company, string $type): array
     {
-        $ids = $this->configuredIds($company, $type === self::SUPPORT ? self::SUPPORT_RESPONDERS : self::CRM_ASSISTANTS);
         if ($type === self::RELATIONSHIP) {
+            $ids = [];
             foreach ($this->manager->getRepository(PeopleLink::class)->findBy(['company' => $company, 'linkType' => 'salesman']) as $link) {
-                $id = $link->getPeople()?->getId();
-                if ($id) {
-                    $ids[] = (int) $id;
+                if ($link->getPeople()?->getId()) {
+                    $ids[] = (int) $link->getPeople()->getId();
                 }
             }
+        } else {
+            $ids = $this->configuredIds($company, self::SUPPORT_RESPONDERS);
         }
         $ids = array_values(array_unique($ids));
-        if ($ids === []) {
-            return [];
-        }
 
-        return $this->manager->getRepository(People::class)->findBy(['id' => $ids], ['name' => 'ASC']);
+        return $ids === [] ? [] : $this->manager->getRepository(People::class)->findBy(['id' => $ids], ['name' => 'ASC']);
     }
 
     public function isResponder(People $company, string $type, ?People $people): bool
@@ -76,17 +76,14 @@ class TicketRulesService
         return false;
     }
 
-    /**
-     * Who may write in the ticket: the customer side, the company itself (its AI), or a responder
-     * of the ticket's context.
-     */
+    /** Who may write in the request (see class doc). */
     public function canReply(Task $task, People $author): bool
     {
         $provider = $task->getProvider();
         if (!$provider instanceof People || $author->getId() === $provider->getId()) {
             return true;
         }
-        if ($this->isCustomerSide($task, $author)) {
+        if ($task->getTaskFor()?->getId() === $author->getId() || $this->isCustomerSide($task, $author)) {
             return true;
         }
 
@@ -96,6 +93,11 @@ class TicketRulesService
     public function isCustomerSide(Task $task, People $people): bool
     {
         $client = $task->getClient();
+        // The request's client is always the customer side, even when that person also works for the
+        // provider (e.g. a platform employee opening a request in the requests screen).
+        if ($client instanceof People && $client->getId() === $people->getId()) {
+            return true;
+        }
         if ($task->getRegisteredBy()?->getId() === $people->getId()) {
             // The author of the request, unless the author works for the provider (opened it internally).
             return !$this->worksFor($people, $task->getProvider());
@@ -104,37 +106,81 @@ class TicketRulesService
             return false;
         }
 
-        return $client->getId() === $people->getId() || $this->worksFor($people, $client);
+        return $this->worksFor($people, $client);
     }
 
-    /** Picks the responsible person for a ticket without one (null when nobody is configured). */
-    public function pickResponsible(People $company, string $type): ?People
+    /** Responsible person for a request born without one (null when nobody can take it). */
+    public function pickResponsible(Task $task): ?People
     {
-        $responders = $this->responders($company, $type);
+        $company = $task->getProvider();
+        if (!$company instanceof People) {
+            return null;
+        }
+        if ($task->getType() === self::RELATIONSHIP) {
+            return $this->clientSalesman($company, $task->getClient());
+        }
+        $responders = $this->responders($company, self::SUPPORT);
         if ($responders === []) {
             return null;
         }
 
-        return $this->strategy($company, $type) === 'least_open'
-            ? $this->leastOpen($company, $type, $responders)
+        return $this->supportStrategy($company) === 'least_open'
+            ? $this->leastOpen($company, self::SUPPORT, $responders)
             : $responders[array_rand($responders)];
     }
 
-    public function strategy(People $company, string $type): string
+    /**
+     * CRM rule: the salesman linked to the client (or to the company the client person works for);
+     * otherwise the CRM strategy picks one and the link is recorded.
+     */
+    public function clientSalesman(People $company, ?People $client): ?People
     {
-        $raw = (string) $this->configService->getConfig($company, $type === self::SUPPORT ? self::SUPPORT_STRATEGY : self::CRM_STRATEGY);
+        $parties = $this->clientParties($client);
+        if ($parties !== []) {
+            $row = $this->manager->createQueryBuilder()
+                ->select('IDENTITY(clientLink.company) AS salesman')
+                ->from(PeopleLink::class, 'clientLink')
+                ->join(PeopleLink::class, 'salesmanLink', 'WITH', 'salesmanLink.people = clientLink.company AND salesmanLink.linkType = :salesman')
+                ->where('clientLink.people IN (:parties)')
+                ->andWhere('clientLink.linkType IN (:clientLinks)')
+                ->andWhere('salesmanLink.company = :company')
+                ->setParameter('parties', $parties)
+                ->setParameter('clientLinks', self::CLIENT_LINKS)
+                ->setParameter('salesman', 'salesman')
+                ->setParameter('company', $company)
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult();
+            if (!empty($row['salesman'])) {
+                return $this->manager->getRepository(People::class)->find((int) $row['salesman']);
+            }
+        }
 
-        return in_array($raw, ['least_open', 'least_clients'], true) ? 'least_open' : 'random';
+        $salesman = $this->salesmanDistribution?->discoverSalesman($company);
+        if ($salesman instanceof People && $parties !== []) {
+            // Same link the CRM records (SalesmanService::discoverSalesmanForClient). Only persisted here:
+            // this runs in Task prePersist (at persist(), before the flush that saves both).
+            $link = new PeopleLink();
+            $link->setCompany($salesman);
+            $link->setPeople($parties[0]);
+            $link->setLinkType('sellers-client');
+            $this->manager->persist($link);
+        }
+
+        return $salesman instanceof People ? $salesman : null;
     }
 
-    /** @return array{support_strategy: string, support_responders: list<int>, crm_strategy: string, crm_assistants: list<int>} */
+    public function supportStrategy(People $company): string
+    {
+        return (string) $this->configService->getConfig($company, self::SUPPORT_STRATEGY) === 'least_open' ? 'least_open' : 'random';
+    }
+
+    /** @return array{support_strategy: string, support_responders: list<int>} */
     public function settings(People $company): array
     {
         return [
-            'support_strategy' => $this->strategy($company, self::SUPPORT),
+            'support_strategy' => $this->supportStrategy($company),
             'support_responders' => $this->configuredIds($company, self::SUPPORT_RESPONDERS),
-            'crm_strategy' => $this->strategy($company, self::RELATIONSHIP),
-            'crm_assistants' => $this->configuredIds($company, self::CRM_ASSISTANTS),
         ];
     }
 
@@ -143,21 +189,36 @@ class TicketRulesService
     {
         $module = $this->configService->discoveryModule('ui-crm');
         if (isset($input['support_strategy'])) {
-            $this->configService->addConfig($company, self::SUPPORT_STRATEGY, $this->validStrategy($input['support_strategy']), $module);
+            $strategy = in_array($input['support_strategy'], self::STRATEGIES, true) ? (string) $input['support_strategy'] : 'random';
+            $this->configService->addConfig($company, self::SUPPORT_STRATEGY, $strategy, $module);
         }
-        if (isset($input['crm_strategy'])) {
-            // Same key the CRM engine already reads; least_open is stored as its least_clients.
-            $value = $this->validStrategy($input['crm_strategy']) === 'least_open' ? 'least_clients' : 'random';
-            $this->configService->addConfig($company, self::CRM_STRATEGY, $value, $module);
-        }
-        foreach (['support_responders' => self::SUPPORT_RESPONDERS, 'crm_assistants' => self::CRM_ASSISTANTS] as $field => $key) {
-            if (array_key_exists($field, $input)) {
-                $ids = $this->employeeIds($company, is_array($input[$field]) ? $input[$field] : []);
-                $this->configService->addConfig($company, $key, (string) json_encode($ids), $module);
-            }
+        if (array_key_exists('support_responders', $input)) {
+            $ids = $this->employeeIds($company, is_array($input['support_responders']) ? $input['support_responders'] : []);
+            $this->configService->addConfig($company, self::SUPPORT_RESPONDERS, (string) json_encode($ids), $module);
         }
 
         return $this->settings($company);
+    }
+
+    /**
+     * The client as the CRM sees it: the client itself first, then the companies a client person works
+     * for (a request opened by a customer company's employee belongs to that company's salesman).
+     *
+     * @return list<People>
+     */
+    private function clientParties(?People $client): array
+    {
+        if (!$client instanceof People) {
+            return [];
+        }
+        $parties = [$client];
+        foreach ($this->manager->getRepository(PeopleLink::class)->findBy(['people' => $client, 'linkType' => PeopleLink::EMPLOYEE_LINK]) as $link) {
+            if ($link->getCompany() instanceof People) {
+                $parties[] = $link->getCompany();
+            }
+        }
+
+        return $parties;
     }
 
     /** @return list<int> */
@@ -166,11 +227,6 @@ class TicketRulesService
         $value = $this->configService->getConfig($company, $key, true);
 
         return is_array($value) ? array_values(array_filter(array_map('intval', $value))) : [];
-    }
-
-    private function validStrategy(mixed $value): string
-    {
-        return in_array($value, self::STRATEGIES, true) ? (string) $value : 'random';
     }
 
     /**

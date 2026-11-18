@@ -109,7 +109,7 @@ class TaskService
   public function prePersist(Task $task): Task
   {
     if ($this->ticketRules && TicketRulesService::isTicket($task) && !$task->getTaskFor() && $task->getProvider()) {
-      $responsible = $this->ticketRules->pickResponsible($task->getProvider(), (string) $task->getType());
+      $responsible = $this->ticketRules->pickResponsible($task);
       if ($responsible) {
         $task->setTaskFor($responsible);
       }
