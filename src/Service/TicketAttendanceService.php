@@ -19,6 +19,8 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 class TicketAttendanceService
 {
+    use UserTimezoneResolverTrait;
+
     public const CONFIG = 'ticket-attendance';
     public const AI_PROVIDERS = 'ai-providers';
     private const DEFAULT_NAMES = [TicketRulesService::SUPPORT => 'Assistente de Suporte IA', TicketRulesService::RELATIONSHIP => 'Assistente Comercial IA'];
@@ -70,6 +72,7 @@ class TicketAttendanceService
         $user->setUsername(mb_substr(sprintf('ia-%s-%d', $type, $company->getId()), 0, 50));
         $user->setHash(bin2hex(random_bytes(24)));
         $user->setPeople($people);
+        $user->setTimezone($this->resolveDefaultTimezone());
         $this->manager->persist($user);
         $this->manager->flush();
         $this->store($company, [$type => ['ai_people' => $people->getId()]]);
