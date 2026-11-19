@@ -37,6 +37,7 @@ class TicketRulesService
         private EntityManagerInterface $manager,
         private ConfigService $configService,
         private ?SalesmanDistributionService $salesmanDistribution = null,
+        private ?TicketAttendanceService $attendance = null,
     ) {}
 
     public static function isTicket(?Task $task): bool
@@ -84,6 +85,9 @@ class TicketRulesService
             return true;
         }
         if ($task->getTaskFor()?->getId() === $author->getId() || $this->isCustomerSide($task, $author)) {
+            return true;
+        }
+        if ($this->attendance?->isAiPeople($provider, $author)) {
             return true;
         }
 
@@ -175,12 +179,14 @@ class TicketRulesService
         return (string) $this->configService->getConfig($company, self::SUPPORT_STRATEGY) === 'least_open' ? 'least_open' : 'random';
     }
 
-    /** @return array{support_strategy: string, support_responders: list<int>} */
+    /** @return array{support_strategy: string, support_responders: list<int>, attendance: array} */
     public function settings(People $company): array
     {
         return [
             'support_strategy' => $this->supportStrategy($company),
             'support_responders' => $this->configuredIds($company, self::SUPPORT_RESPONDERS),
+            // Per kind of request: AI or human first, welcome message and the AI person's name.
+            'attendance' => $this->attendance?->settings($company) ?? [],
         ];
     }
 
@@ -195,6 +201,9 @@ class TicketRulesService
         if (array_key_exists('support_responders', $input)) {
             $ids = $this->employeeIds($company, is_array($input['support_responders']) ? $input['support_responders'] : []);
             $this->configService->addConfig($company, self::SUPPORT_RESPONDERS, (string) json_encode($ids), $module);
+        }
+        if (isset($input['attendance']) && is_array($input['attendance'])) {
+            $this->attendance?->save($company, $input['attendance']);
         }
 
         return $this->settings($company);
