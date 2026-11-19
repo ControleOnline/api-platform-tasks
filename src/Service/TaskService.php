@@ -37,6 +37,7 @@ class TaskService
     private StatusService $statusService,
     private ?PeopleService $peopleService = null,
     private ?TicketRulesService $ticketRules = null,
+    private ?TicketAttendanceService $attendance = null,
   ) {
     $this->request = $this->requestStack->getCurrentRequest();
   }
@@ -109,9 +110,14 @@ class TaskService
   public function prePersist(Task $task): Task
   {
     if ($this->ticketRules && TicketRulesService::isTicket($task) && !$task->getTaskFor() && $task->getProvider()) {
-      $responsible = $this->ticketRules->pickResponsible($task);
-      if ($responsible) {
-        $task->setTaskFor($responsible);
+      if (!$task->getAiAgent() && $this->attendance?->aiFirst($task)) {
+        // AI first: the company AI attends with no responsible person until it hands off.
+        $task->setAiAgent('auto');
+      } elseif (!$task->getAiAgent()) {
+        $responsible = $this->ticketRules->pickResponsible($task);
+        if ($responsible) {
+          $task->setTaskFor($responsible);
+        }
       }
     }
 
