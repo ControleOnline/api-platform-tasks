@@ -26,6 +26,7 @@ class TaskInterationService
     private IntegrationService $integrationService,
     private AutomationMessagesService $automationMessagesService,
     private ?TicketRulesService $ticketRules = null,
+    private ?TicketAttendanceService $attendance = null,
   ) {}
 
   public function addClientInteration(MessageInterface $message, Connection $connection, string $type): TaskInteration
@@ -203,8 +204,15 @@ class TaskInterationService
     if ($author && $author->getId() === $task->getClient()?->getId()) return $taskInteration;
 
     // An employee answering the customer takes the conversation from the AI.
-    if ($author && $author->getId() !== $task->getProvider()?->getId() && $task->getAiAgent()) {
+    // An employee answering the customer takes the conversation from the AI and becomes the responsible
+    // (the AI person's own replies keep it attending).
+    $provider = $task->getProvider();
+    if ($author && $provider && $author->getId() !== $provider->getId() && $task->getAiAgent()
+      && !$this->attendance?->isAiPeople($provider, $author)) {
       $task->setAiAgent(null);
+      if (!$task->getTaskFor()) {
+        $task->setTaskFor($author);
+      }
       $this->manager->flush();
     }
 
